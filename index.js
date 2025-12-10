@@ -87,16 +87,36 @@ export async function getCurrentParticipants() {
 	return { members: group.members, present: active };
 }
 
+export function getCurrentParticipantsSync() {
+	const group = groups.find((g) => g.id == selected_group);
+
+	var active = [...group.members];
+
+    if (extensionSettings.universalTrackerOn) active.push('presence_universal_tracker');
+
+	if (!extensionSettings.includeMuted)
+		active = active.filter(char => !group.disabled_members.includes(char));
+
+	if (!chat_metadata.ignore_presence) chat_metadata.ignore_presence = [];
+
+	chat_metadata.ignore_presence.forEach(char => {
+		if (active.includes(char)) active.splice(active.indexOf(char), 1);
+	});
+
+	return { members: group.members, present: active };
+}
+
+
 // Function to get comma-separated list of present characters
-export async function getPresentCharactersList() {
+export function getPresentCharactersList() {
 	if (!isActive()) return "";
 	
-	const participants = await getCurrentParticipants();
+	const participants = getCurrentParticipantsSync();
 	const presentCharacters = participants.present;
 	
 	// Convert avatar keys to character names
 	const characterNames = presentCharacters.map(avatar => {
-		if (avatar === "presence_universal_tracker") return "Universal Tracker";
+		if (avatar === "presence_universal_tracker") return;
 		
 		const character = characters.find(char => char.avatar === avatar);
 		return character ? character.name : avatar;
