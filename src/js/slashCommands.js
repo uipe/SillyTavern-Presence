@@ -286,6 +286,73 @@ async function commandForceNonePresent(namedArgs, message_id) {
     await addPresenceTrackerToMessages(true);
 };
 
+async function commandGenerateString(namedArgs, message_id) {
+    if (!isActive()) return "";
+
+    if (message_id === undefined || message_id === "") {
+        // If no message ID is provided, return all characters present in the entire chat
+        const allPresentChars = new Set();
+        for (const message of chat) {
+            if (message.present) {
+                message.present.forEach(char => allPresentChars.add(char));
+            }
+        }
+        
+        const charsArray = Array.from(allPresentChars);
+        const charNames = charsArray.map(charAvatar => {
+            const char = characters.find(c => c.avatar === charAvatar);
+            return char ? char.name : charAvatar;
+        });
+        
+        const resultString = charNames.join(", ");
+        log("Generated string with all characters present in chat: " + resultString);
+        return resultString;
+    }
+
+    const messages_number = String(message_id).trim().includes("-") ? stringToRange(message_id, 0, chat.length - 1) : Number(message_id);
+
+    if (messages_number == null) {
+        // @ts-ignore
+        toastr.error("WARN: Id range provided for /presenceGenerateString is invalid");
+        return "";
+    }
+
+    const allPresentChars = new Set();
+
+    if (typeof messages_number === "number") {
+        if (isNaN(messages_number)) {
+            // @ts-ignore
+            toastr.error("WARN: message id provided for /presenceGenerateString is not a number");
+            return "";
+        }
+        if (chat[messages_number] === undefined) {
+            // @ts-ignore
+            toastr.error("WARN: message id provided for /presenceGenerateString doesn't exist within the chat");
+            return "";
+        }
+
+        if (chat[messages_number].present) {
+            chat[messages_number].present.forEach(char => allPresentChars.add(char));
+        }
+    } else {
+        for (let mes_id = messages_number.start; mes_id <= messages_number.end; mes_id++) {
+            if (chat[mes_id] && chat[mes_id].present) {
+                chat[mes_id].present.forEach(char => allPresentChars.add(char));
+            }
+        }
+    }
+
+    const charsArray = Array.from(allPresentChars);
+    const charNames = charsArray.map(charAvatar => {
+        const char = characters.find(c => c.avatar === charAvatar);
+        return char ? char.name : charAvatar;
+    });
+
+    const resultString = charNames.join(", ");
+    log("Generated string with characters present: " + resultString);
+    return resultString;
+}
+
 export function registerSlashCommands() {
     SlashCommandParser.addCommandObject(
         SlashCommand.fromProps({
@@ -618,6 +685,45 @@ export function registerSlashCommands() {
                 <ul>
                     <li>
                         <pre><code>/presenceForceNonePresent 0-9</code></pre>
+                    </li>
+                </ul>
+            </div>`,
+        })
+    );
+
+    SlashCommandParser.addCommandObject(
+        SlashCommand.fromProps({
+            name: "presenceGenerateString",
+            callback: async (args, value) => {
+                const result = await commandGenerateString(args, value);
+                return result;
+            },
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'message index (starts with 0) or range - i.e.: 10 or 5-18 (optional)',
+                    typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+                    isRequired: false,
+                    enumProvider: commonEnumProviders.messages(),
+                }),
+            ],
+            helpString: `
+            <div>
+                Generates a string with all characters present in a message, range of messages, or the entire chat if no message is specified.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/presenceGenerateString</code></pre>
+                        Returns all characters present in the entire chat
+                    </li>
+                    <li>
+                        <pre><code>/presenceGenerateString 5</code></pre>
+                        Returns characters present in message 5
+                    </li>
+                    <li>
+                        <pre><code>/presenceGenerateString 0-9</code></pre>
+                        Returns characters present in messages 0 through 9
                     </li>
                 </ul>
             </div>`,
