@@ -87,6 +87,24 @@ export async function getCurrentParticipants() {
 	return { members: group.members, present: active };
 }
 
+// Function to get comma-separated list of present characters
+export async function getPresentCharactersList() {
+	if (!isActive()) return "";
+	
+	const participants = await getCurrentParticipants();
+	const presentCharacters = participants.present;
+	
+	// Convert avatar keys to character names
+	const characterNames = presentCharacters.map(avatar => {
+		if (avatar === "presence_universal_tracker") return "Universal Tracker";
+		
+		const character = characters.find(char => char.avatar === avatar);
+		return character ? character.name : avatar;
+	});
+	
+	return characterNames.join(", ");
+}
+
 export async function onNewMessage(mesId) {
 	if (!isActive()) return;
 
@@ -410,7 +428,15 @@ jQuery(async () => {
     $('#GroupFavDelOkBack .flex1').append(universalTrackerAlwaysOn);
 	$('#presence_universal_tracer_on').prop("checked", extensionSettings.universalTrackerOn);
     $('#presence_universal_tracer_on').on("change", (e) => {
-		extensionSettings.universalTrackerOn = $(e.target).prop("checked");
-		saveSettingsDebounced();
-	});
+  		extensionSettings.universalTrackerOn = $(e.target).prop("checked");
+    	saveSettingsDebounced();
+    });
+  
+ // Register the {{present}} macro
+ const { registerMacro } = SillyTavern.getContext();
+ registerMacro('present', () => {
+    return getPresentCharactersList();
+ });
+
+
 });

@@ -36,6 +36,9 @@ If you have a character who should see everything (such as a narrator) then can 
 
 Click this button and it lights up, that will indicate that this character can see EVERYTHING.
 
+### Macros
+- `{{present}}` Returns a comma-separated list of characters currently marked as present in the group chat.
+
 ### Commands
 - `/presenceForget name=<char_name> <mes_index|mes_range>` Removes **some** messages from the memory of a character.
 - `/presenceForgetAll name=<char_name>` Wipes the memory of a character.
